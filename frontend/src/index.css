@@ -28,3 +28,35 @@
 .dark-landing .public-bottom h2{color:var(--dl-text)}.dark-landing .public-bottom>a{color:var(--dl-gold)}
 .dark-landing footer{border-top:1px solid var(--dl-line);color:var(--dl-muted)}
 @media(max-width:600px){.dark-landing .hero{min-height:540px;padding:70px 20px 90px}.dark-landing .hero-caption{right:20px}}
+
+/* Global dark farming theme (app-wide) */
+:root{--cream:#14100c;--white:#1f1812;--soft:#2e2417;--sage:#dcaa4f;--muted:#c1b49c;--line:#3a2f23;--text:#f4ecdb;--red:#e08b6d}
+body{background:var(--cream);color:var(--text)}
+.public{background:var(--cream)}
+.logo{color:#ecd39a}.logo small{color:var(--sage)}
+.text-button{color:#ecd39a}
+.secondary-button{border-color:#a8843e;color:#ecd39a}.secondary-button:hover{background:#dcaa4f1f}
+.primary-button{background:#3f7a4b}.primary-button:hover{background:#498a56;box-shadow:0 8px 20px #00000055}
+.stat strong{color:#ecd39a}
+.crumb b{color:#ecd39a}
+.app-header{background:#171310}
+.filter-pills button:first-child{background:#3f7a4b;color:#fff}
+.demo-logins button{color:#ecd39a}
+.auth-form input,.auth-form select,.form-panel input,.form-panel select,.form-panel textarea{background:#241c13;border-color:#4a3b28;color:var(--text)}
+.auth-form input:focus,.form-panel input:focus{border-color:var(--sage)}
+.error{background:#3a201a;color:#f0b9a5;border-color:#5c3327}
+.table-head{background:#241c13}
+.sim-banner{background:#241f14}
+.status{background:#2b3a24;color:#a9c79b}
+.status.completed{background:#23361f;color:#9fd3a4}
+.status.pending{background:#3a2d14;color:#dcaa4f}
+.status.in_transit{background:#1e2f36;color:#8fc3d6}
+.status.draft{background:#2a251d;color:#b3a892}
+.match{background:#23361f;color:#9fd3a4}
+.produce-thumb{background:#2e2417}
+.chain b{background:#ffffff12}
+.chain strong{color:#9fd3a4}
+.breakdown i{background:#5c5340}
+.breakdown i.farmer{background:var(--sage)}
+.share-ring{background:conic-gradient(#dcaa4f 0 73.5%,#2e2a20 73.5%)}
+.positive{color:#8fce8f}

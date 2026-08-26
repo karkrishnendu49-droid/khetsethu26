@@ -33,3 +33,7 @@ Build a complete production-ready full-stack web application called KhetSetu for
 ## Update (June 2026): Dark Landing Theme
 - Landing page (Public component only) restyled to dark farming aesthetic: near-black soil background (#14100c), full-width generated wheat-field hero image with gradient overlay, forest green buttons, golden wheat headings/accents, warm off-white text.
 - Scoped via `.dark-landing` class in index.css; app shell, auth, marketplace pages unchanged.
+
+## Update (June 2026): App-wide Dark Theme
+- Extended the dark farming theme globally via CSS variable overrides + targeted rules in index.css (bottom block): soil-black backgrounds, dark panels (#1f1812), golden wheat accents/eyebrows/tags, forest green primary buttons, warm off-white text, dark status pills, dark form inputs.
+- Applies to dashboard, login/signup, produce, marketplace, orders, prices, notifications, admin, demo. Verified via screenshots (login, dashboard, marketplace, prices).
