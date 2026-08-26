@@ -30,3 +30,6 @@ Build a complete production-ready full-stack web application called KhetSetu for
 - P0: connect real transporter assignment records and buyer-side order creation UX.
 - P1: add full profile editing, forgot-password email delivery, admin farmer/buyer tables and demo reset UI.
 - P2: add Hindi/Bengali translations, verified market API adapters, image uploads and richer analytics charts.
+## Update (June 2026): Dark Landing Theme
+- Landing page (Public component only) restyled to dark farming aesthetic: near-black soil background (#14100c), full-width generated wheat-field hero image with gradient overlay, forest green buttons, golden wheat headings/accents, warm off-white text.
+- Scoped via `.dark-landing` class in index.css; app shell, auth, marketplace pages unchanged.
