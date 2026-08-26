@@ -1,0 +1,29 @@
+{
+  "summary": "Full backend + frontend test of KhetSetu SIH 2026 upgrade (mapping/routing/weather/market/admin integrations). Added 11 new pytest cases in test_khetsetu_geo_api.py — all 11 new + 5 existing regression = 16/16 PASS. Playwright covered farmer weather panel, marketplace list/map toggle + Leaflet map + match explanations, orders view-route panel with distance/ETA/transport metrics + polyline, add-produce geolocation denied fallback, prices mandi board + public /price-transparency (200 OK, no auth), guided demo step 8 (demo-route-step reached with live OSRM data), admin integrations panel with 4 services + all 3 test buttons returning success/demo results, and mobile viewport 390x844 marketplace. Zero console errors on tested pages. No crashes.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_khetsetu_geo_api.py",
+    "/app/backend/tests/test_khetsetu_api.py",
+    "/app/backend/tests/test_cors.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Market prices endpoint returns wrapped object {rows, source, demo, external_configured} rather than a plain list — main agent should decide the contract; frontend and tests already accommodate both, but consistency with other list endpoints (e.g., /api/prices) would be cleaner.",
+    "Admin integrations response uses key `service` (not `name`) and exposes `key_configured` boolean flag — no secret values leak; naming is fine.",
+    "Guided demo test-id for the Route step is `demo-route-step` and it renders at step index 7 (0-based) = displayed step 8, matching spec."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_khetsetu_geo_api.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/iteration_3.json"
+  ],
+  "success_rate": {"backend": "100% (16/16)", "frontend": "100% of tested flows"},
+  "test_credentials": "Demo accounts from /app/memory/test_credentials.md — farmer/buyer/admin @khetsetu.in confirmed working via both direct login and demo shortcut buttons on /login.",
+  "seed_data_creation": "Created + deleted one produce listing (GeoTestCrop, Kalyani/Nadia/WB) to verify server-side Nominatim/gazetteer geocoding populated lat/lon on POST /api/produce. Created 1 order via POST /api/orders to verify transport_cost/distance_km/eta_min fields on the response.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "All new geo/route/weather/market/integrations endpoints verified end-to-end. External providers (OSRM + Open-Meteo + Nominatim) were reachable during this run (sources reported as 'osrm', 'live/open-meteo', 'nominatim'). If a future run sees 'estimate'/'demo'/'gazetteer' or 'fallback', that is expected graceful behavior — do NOT treat as bug. Playwright note: login form has NO button[type='submit'] — use text=Farmer demo / Buyer demo / Admin demo buttons, or click the 'Log in' button by text. Demo route step is reached by clicking [data-testid='demo-next-button'] 7 times.",
+  "rca of the issue": "N/A — no bugs found."
+}

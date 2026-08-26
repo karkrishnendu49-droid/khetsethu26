@@ -60,3 +60,59 @@ body{background:var(--cream);color:var(--text)}
 .breakdown i.farmer{background:var(--sage)}
 .share-ring{background:conic-gradient(#dcaa4f 0 73.5%,#2e2a20 73.5%)}
 .positive{color:#8fce8f}
+
+/* Maps, weather, logistics & integrations */
+.kmap{width:100%;border:1px solid var(--line);position:relative;z-index:1;background:#191410}
+.kmap-pin{background:none;border:none}
+.kmap-dot{display:block;width:18px;height:18px;border-radius:50%;border:2.5px solid #f4ecdb;box-shadow:0 2px 8px #0009}
+.leaflet-popup-content-wrapper{background:#241c13;color:#f4ecdb;border:1px solid #4a3b28;border-radius:4px;font:13px 'DM Sans',sans-serif}
+.leaflet-popup-tip{background:#241c13}
+.leaflet-popup-content{margin:12px 14px;line-height:1.55}
+.leaflet-container a.leaflet-popup-close-button{color:#c1b49c}
+.leaflet-control-attribution{background:#14100ccc!important;color:#8f8163!important;font-size:9px}
+.leaflet-control-attribution a{color:#c1b49c!important}
+.leaflet-bar a{background:#241c13!important;color:#f4ecdb!important;border:1px solid #3a2f23!important}
+.view-toggle{display:flex;border:1px solid var(--line)}
+.view-toggle button{display:inline-flex;align-items:center;gap:7px;background:var(--white);border:0;color:var(--muted);padding:10px 16px;font-size:12px;font-weight:700}
+.view-toggle button.active{background:#3f7a4b;color:#fff}
+.map-wrap{margin-top:24px}
+.map-legend{display:flex;gap:22px;margin-top:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.dot-pin{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dot-pin.green{background:#3f7a4b}.dot-pin.gold{background:#dcaa4f}.dot-pin.soil{background:#8a6f47}
+.match-note{font-size:11px;color:var(--muted);line-height:1.5;margin:0 0 14px;border-left:2px solid #3f7a4b;padding-left:9px}
+.order-card{grid-template-columns:1.5fr auto auto auto auto}
+.route-panel{border-top:1px solid var(--line);padding:18px 22px;background:#191410}
+.route-metrics{display:flex;gap:34px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.route-metrics small{display:block;font-size:10px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:3px}
+.route-metrics b{font:800 19px 'Manrope';color:#ecd39a}
+.route-endpoints{display:flex;align-items:center;gap:12px;margin-top:12px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.weather-panel{margin-bottom:18px}
+.weather-now{display:flex;align-items:center;gap:16px;color:#ecd39a}
+.weather-now strong{font:800 30px 'Manrope';display:block}
+.weather-now>div>span{font-size:12px;color:var(--muted)}
+.weather-meta{margin-left:auto;display:flex;flex-direction:column;gap:6px;font-size:12px;color:var(--muted)}
+.weather-meta span{display:inline-flex;align-items:center;gap:6px}
+.weather-forecast{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:16px}
+.weather-forecast>div{border:1px solid var(--line);padding:12px;font-size:12px}
+.weather-forecast small{color:var(--muted);display:block}
+.weather-forecast b{display:block;margin:5px 0 3px;color:#ecd39a}
+.weather-forecast span{color:var(--muted);font-size:11px}
+.integration-list{display:flex;flex-direction:column}
+.integration-row{display:grid;grid-template-columns:210px 1fr auto;gap:18px;align-items:center;padding:16px 0;border-top:1px solid var(--line)}
+.integration-row h3{margin:0 0 7px;font-size:15px}
+.int-status{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700}
+.int-dot{width:9px;height:9px;border-radius:50%}
+.int-detail{font-size:12px;color:var(--muted);line-height:1.5;margin:0}
+.int-result{font-size:11px;margin:7px 0 0;color:#ecd39a}
+.loc-actions{display:flex;align-items:center;gap:12px;margin:4px 0 14px;flex-wrap:wrap}
+.loc-note{font-size:12px;color:var(--muted);max-width:420px;line-height:1.5}
+.wide .kmap{margin-bottom:18px}
+.demo-route-metrics{display:flex;gap:44px;margin:26px 0 20px;flex-wrap:wrap}
+.demo-route-metrics small{display:block;font-size:10px;letter-spacing:1.4px;color:#aebaad;margin-bottom:5px}
+.demo-route-metrics b{font:800 26px 'Manrope';color:#e0e9d7}
+.mandi-board{margin-bottom:18px}
+.mandi-title{padding:20px 22px 0}
+.mandi-row{grid-template-columns:1.2fr 1.2fr 1.6fr .8fr .8fr 1fr}
+.muted-cell{color:var(--muted);font-size:11px}
+@media(max-width:900px){.integration-row{grid-template-columns:1fr;gap:10px}.order-card{grid-template-columns:1fr 1fr;gap:14px}}
+@media(max-width:600px){.route-metrics{gap:18px}.demo-route-metrics{gap:22px}.weather-forecast{grid-template-columns:1fr 1fr 1fr}.mandi-row{min-width:760px}.page-heading .view-toggle{align-self:flex-start}}

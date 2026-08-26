@@ -37,3 +37,12 @@ Build a complete production-ready full-stack web application called KhetSetu for
 ## Update (June 2026): App-wide Dark Theme
 - Extended the dark farming theme globally via CSS variable overrides + targeted rules in index.css (bottom block): soil-black backgrounds, dark panels (#1f1812), golden wheat accents/eyebrows/tags, forest green primary buttons, warm off-white text, dark status pills, dark form inputs.
 - Applies to dashboard, login/signup, produce, marketplace, orders, prices, notifications, admin, demo. Verified via screenshots (login, dashboard, marketplace, prices).
+
+## Update (June 2026): API Integration & Mapping Layer
+- Backend restructured into config/ routes/ services/ utils/ (geocoding, routing, weather, market-price, matching, map services) with TTL caching and graceful fallbacks everywhere.
+- Free keyless providers: OSRM routing (live road routes), Nominatim geocoding (+WB gazetteer fallback), Open-Meteo weather (+demo fallback), Esri dark tiles via Leaflet. No keys in frontend; .env.example files + /app/API_INTEGRATIONS.md docs; MAP/WEATHER/MARKET_API_KEY placeholders for future paid/govt APIs.
+- New endpoints: /api/geo/geocode, /api/geo/route, /api/weather, /api/market-prices, /api/map/overview, /api/orders/{id}/logistics, /api/admin/integrations (+test/{service}).
+- DB: coordinates on users/produce/orders + seeded markets collection; migration (ensure_geo) preserves old records. Buyer has business_name/address/district/state/lat/lon.
+- Distance-based AI matching (crop 30/qty 20/price 20/distance 15/demand 15) with human-readable explanation, shown in marketplace.
+- Frontend: KMap Leaflet wrapper; marketplace List/Map toggle with farmer/buyer/mandi markers; order route panels (distance/ETA/cost/live polyline); Add Produce village/district/state + Use My Location with confirm map; dashboard weather card; mandi price board on Prices; Admin "API & Integrations" status + test buttons; guided demo now 11 steps incl. "Live route & logistics" with live OSRM map.
+- Tested: iteration_3.json — 16/16 backend, all frontend flows pass, mobile OK.

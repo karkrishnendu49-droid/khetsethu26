@@ -14,8 +14,18 @@ from pydantic import BaseModel, Field, EmailStr
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('khetsetu')
-client = AsyncIOMotorClient(os.environ['MONGO_URL'])
-db = client[os.environ['DB_NAME']]
+from utils.db import client, db, clean
+from utils.auth import current_user
+from utils.geo import haversine_km, NADIA, KOLKATA
+from services.matching_service import compute_match
+from services.routing_service import get_route
+from services.geocoding_service import geocode
+from routes.geo import router as geo_router
+from routes.weather import router as weather_router
+from routes.market import router as market_router
+from routes.integrations import router as integrations_router
+from routes.logistics import router as logistics_router
+
 app = FastAPI(title='KhetSetu API')
 api = APIRouter(prefix='/api')
 SECRET = os.environ['JWT_SECRET']
@@ -37,6 +47,11 @@ class ProduceInput(BaseModel):
     location: str = 'Nadia, West Bengal'
     description: str = ''
     status: str = 'active'
+    village: str = ''
+    district: str = 'Nadia'
+    state: str = 'West Bengal'
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
 
 class OrderInput(BaseModel):
     produce_id: str
@@ -45,30 +60,11 @@ class OrderInput(BaseModel):
 class StatusInput(BaseModel):
     status: str
 
-def clean(doc):
-    if not doc: return None
-    doc = dict(doc)
-    if '_id' in doc: doc['id'] = str(doc.pop('_id'))
-    for key, value in list(doc.items()):
-        if hasattr(value, 'isoformat'): doc[key] = value.isoformat()
-    return doc
-
 def hash_password(password): return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
 def verify_password(password, hashed): return bcrypt.checkpw(password.encode(), hashed.encode())
 def token(user_id, kind='access'):
     duration = timedelta(minutes=30) if kind == 'access' else timedelta(days=7)
     return jwt.encode({'sub': str(user_id), 'type': kind, 'exp': datetime.now(timezone.utc)+duration}, SECRET, algorithm=ALGORITHM)
-
-async def current_user(request: Request):
-    raw = request.cookies.get('access_token') or request.headers.get('Authorization', '').replace('Bearer ', '')
-    if not raw: raise HTTPException(401, 'Please log in to continue.')
-    try:
-        payload = jwt.decode(raw, SECRET, algorithms=[ALGORITHM])
-        if payload.get('type') != 'access': raise ValueError()
-        user = await db.users.find_one({'_id': __import__('bson').ObjectId(payload['sub'])}, {'password_hash': 0})
-        if not user: raise ValueError()
-        return clean(user)
-    except Exception: raise HTTPException(401, 'Your session has expired. Please log in again.')
 
 def set_auth(response, user_id):
     secure = os.environ.get('COOKIE_SECURE', 'true').lower() == 'true'
@@ -78,8 +74,8 @@ def set_auth(response, user_id):
 async def seed_demo():
     if await db.users.count_documents({}) > 0: return
     users = [
-        {'email':'farmer@khetsetu.in','password_hash':hash_password('farmer123'),'name':'Arjun Das','role':'farmer','location':'Nadia, West Bengal'},
-        {'email':'buyer@khetsetu.in','password_hash':hash_password('buyer123'),'name':'FreshMart Retail','role':'buyer','location':'Kolkata, West Bengal'},
+        {'email':'farmer@khetsetu.in','password_hash':hash_password('farmer123'),'name':'Arjun Das','role':'farmer','location':'Nadia, West Bengal','address':'Nadia, West Bengal','district':'Nadia','state':'West Bengal','latitude':NADIA[0],'longitude':NADIA[1]},
+        {'email':'buyer@khetsetu.in','password_hash':hash_password('buyer123'),'name':'FreshMart Retail','role':'buyer','location':'Kolkata, West Bengal','business_name':'FreshMart Retail','address':'Sealdah, Kolkata, West Bengal','district':'Kolkata','state':'West Bengal','latitude':KOLKATA[0],'longitude':KOLKATA[1]},
         {'email':os.environ['ADMIN_EMAIL'],'password_hash':hash_password(os.environ['ADMIN_PASSWORD']),'name':'KhetSetu Admin','role':'admin','location':'India'}]
     result = await db.users.insert_many(users)
     farmer, buyer, _ = result.inserted_ids
@@ -96,10 +92,23 @@ async def seed_demo():
     notices=[('FreshMart requested 500 kg Tomato.','order'),('Order KS-2026-00125 accepted.','order'),('Rahul Logistics assigned to your pickup.','logistics'),('Pickup scheduled for tomorrow morning.','logistics'),('KhetSetu market recommendation updated.','insight')]
     await db.notifications.insert_many([{'user_id':str(farmer),'title':t,'kind':k,'read':False,'created_at':now} for t,k in notices])
 
+async def ensure_geo():
+    await db.users.update_many({'role':'farmer','latitude':{'$exists':False}},{'$set':{'latitude':NADIA[0],'longitude':NADIA[1],'district':'Nadia','state':'West Bengal','address':'Nadia, West Bengal'}})
+    await db.users.update_many({'role':'buyer','latitude':{'$exists':False}},{'$set':{'latitude':KOLKATA[0],'longitude':KOLKATA[1],'district':'Kolkata','state':'West Bengal','address':'Sealdah, Kolkata, West Bengal','business_name':'FreshMart Retail'}})
+    await db.produce.update_many({'latitude':{'$exists':False}},{'$set':{'latitude':NADIA[0],'longitude':NADIA[1],'district':'Nadia','state':'West Bengal'}})
+    await db.orders.update_many({'pickup_lat':{'$exists':False}},{'$set':{'pickup_lat':NADIA[0],'pickup_lon':NADIA[1],'delivery_lat':KOLKATA[0],'delivery_lon':KOLKATA[1]}})
+    if await db.markets.count_documents({}) == 0:
+        await db.markets.insert_many([
+            {'name':'Kalyani Krishi Mandi','location':'Kalyani, Nadia, West Bengal','district':'Nadia','state':'West Bengal','latitude':22.9750,'longitude':88.4345},
+            {'name':'Sealdah Koley Market','location':'Kolkata, West Bengal','district':'Kolkata','state':'West Bengal','latitude':22.5697,'longitude':88.3697},
+            {'name':'Krishnanagar Bazar','location':'Krishnanagar, Nadia, West Bengal','district':'Nadia','state':'West Bengal','latitude':23.4058,'longitude':88.4907},
+            {'name':'Barasat Haat','location':'Barasat, West Bengal','district':'North 24 Parganas','state':'West Bengal','latitude':22.7228,'longitude':88.4800}])
+
 @app.on_event('startup')
 async def startup():
     await db.users.create_index('email', unique=True)
     await seed_demo()
+    await ensure_geo()
 
 @api.get('/')
 async def root(): return {'name':'KhetSetu','status':'ready'}
@@ -141,7 +150,12 @@ async def list_produce(user=Depends(current_user), search=''):
 
 @api.post('/produce')
 async def add_produce(data: ProduceInput, user=Depends(current_user)):
-    doc=data.model_dump(); doc.update({'farmer_id':user['id'],'created_at':datetime.now(timezone.utc).isoformat()}); result=await db.produce.insert_one(doc); return clean(await db.produce.find_one({'_id':result.inserted_id}))
+    doc=data.model_dump(); doc.update({'farmer_id':user['id'],'created_at':datetime.now(timezone.utc).isoformat()})
+    if doc.get('latitude') is None or doc.get('longitude') is None:
+        place=', '.join(x for x in [doc.get('village'), doc.get('district'), doc.get('state')] if x) or doc['location']
+        geo=await geocode(place)
+        doc['latitude'], doc['longitude'], doc['geocode_source'] = geo['lat'], geo['lon'], geo['source']
+    result=await db.produce.insert_one(doc); return clean(await db.produce.find_one({'_id':result.inserted_id}))
 
 @api.delete('/produce/{produce_id}')
 async def delete_produce(produce_id: str, user=Depends(current_user)):
@@ -155,7 +169,15 @@ async def marketplace(user=Depends(current_user), search=''):
     query={'status':'active'}
     if search: query['$or']=[{'crop':{'$regex':search,'$options':'i'}},{'location':{'$regex':search,'$options':'i'}}]
     items=[clean(p) for p in await db.produce.find(query).to_list(100)]
-    for p in items: p.update({'buyer':'FreshMart Retail','distance':'32 km','match_score':96 if p['crop']=='Tomato' else 88})
+    buyer=await db.users.find_one({'role':'buyer'}) or {}
+    b_lat,b_lon=buyer.get('latitude',KOLKATA[0]),buyer.get('longitude',KOLKATA[1])
+    for p in items:
+        lat,lon=p.get('latitude') or NADIA[0],p.get('longitude') or NADIA[1]
+        distance_km=round(haversine_km(lat,lon,b_lat,b_lon)*1.25,1)
+        match=compute_match(p,distance_km)
+        p.update({'buyer':buyer.get('business_name') or buyer.get('name','FreshMart Retail'),'latitude':lat,'longitude':lon,
+                  'distance':f'{distance_km} km','distance_km':distance_km,'match_score':match['score'],
+                  'match_explanation':match['explanation'],'match_factors':match['factors']})
     return items
 
 @api.post('/orders')
@@ -163,8 +185,11 @@ async def create_order(data: OrderInput, user=Depends(current_user)):
     from bson import ObjectId
     p=await db.produce.find_one({'_id':ObjectId(data.produce_id)})
     if not p: raise HTTPException(404,'Produce listing not found.')
-    buyer=user if user['role']=='buyer' else await db.users.find_one({'role':'buyer'})
-    doc={'order_id':f'KS-{datetime.now().year}-{secrets.randbelow(90000)+10000}','farmer_id':p['farmer_id'],'buyer_id':clean(buyer)['id'],'produce_id':data.produce_id,'product':p['crop'],'quantity':data.quantity,'price':p['expected_price'],'transport_cost':1500,'pickup_location':p['location'],'delivery_location':'Kolkata','status':'pending','created_at':datetime.now(timezone.utc).isoformat(),'updated_at':datetime.now(timezone.utc).isoformat()}
+    buyer=user if user['role']=='buyer' else clean(await db.users.find_one({'role':'buyer'}))
+    p_lat,p_lon=p.get('latitude') or NADIA[0],p.get('longitude') or NADIA[1]
+    d_lat,d_lon=buyer.get('latitude') or KOLKATA[0],buyer.get('longitude') or KOLKATA[1]
+    route=await get_route(p_lat,p_lon,d_lat,d_lon)
+    doc={'order_id':f'KS-{datetime.now().year}-{secrets.randbelow(90000)+10000}','farmer_id':p['farmer_id'],'buyer_id':buyer['id'],'produce_id':data.produce_id,'product':p['crop'],'quantity':data.quantity,'price':p['expected_price'],'transport_cost':route['transport_cost'],'distance_km':route['distance_km'],'eta_min':route['duration_min'],'pickup_location':p['location'],'delivery_location':buyer.get('address') or 'Kolkata','pickup_lat':p_lat,'pickup_lon':p_lon,'delivery_lat':d_lat,'delivery_lon':d_lon,'status':'pending','created_at':datetime.now(timezone.utc).isoformat(),'updated_at':datetime.now(timezone.utc).isoformat()}
     result=await db.orders.insert_one(doc); return clean(await db.orders.find_one({'_id':result.inserted_id}))
 
 @api.get('/orders')
@@ -199,6 +224,11 @@ async def reset_demo(user=Depends(current_user)):
     await db.users.delete_many({}); await db.produce.delete_many({}); await db.orders.delete_many({}); await db.notifications.delete_many({}); await seed_demo(); return {'message':'Demo data restored'}
 
 app.include_router(api)
+app.include_router(geo_router)
+app.include_router(weather_router)
+app.include_router(market_router)
+app.include_router(integrations_router)
+app.include_router(logistics_router)
 
 _default_origins = [os.environ.get('FRONTEND_URL',''), 'https://khetsetu.in', 'https://www.khetsetu.in', 'http://localhost:3000']
 _extra = [o.strip() for o in os.environ.get('ALLOWED_ORIGINS','').split(',') if o.strip() and o.strip() != '*']
