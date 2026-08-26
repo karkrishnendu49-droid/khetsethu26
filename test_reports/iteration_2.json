@@ -1,0 +1,39 @@
+{
+  "summary": "Verified the backend CORS crash fix and full API regression for KhetSetu. Old enforce_explicit_cors middleware (MutableHeaders.pop crash) is gone; new fastapi.middleware.cors.CORSMiddleware is wired correctly with explicit trusted origins, credentials, allow_origin_regex for *.preview.emergentagent.com, and allow_methods/headers per spec. 16/16 pytest cases pass covering auth (farmer/buyer/admin logins, register/logout/me), dashboard, produce CRUD/search, marketplace, orders + status transitions, notifications, prices, admin authorization, plus new CORS suite (preflight/actual for approved origins, rejection for disallowed origins, credentials true, echoed origin, required headers/methods).",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {
+        "endpoint": "* (all endpoints via external URL)",
+        "issue": "Emergent's Cloudflare ingress rewrites CORS headers on the public preview URL (https://farm-fair-connect.preview.emergentagent.com) to 'Access-Control-Allow-Origin: *' combined with 'Access-Control-Allow-Credentials: true' and 'Access-Control-Allow-Headers: *'. This is a browser-invalid combination and will break credentialed fetch from any custom domain (e.g., https://khetsetu.in). The backend itself (verified via http://localhost:8001) correctly echoes the exact Origin and sets credentials: true, so this is a platform ingress override, not a backend bug. Action needed only when routing khetsetu.in through Emergent; report to Emergent platform team or bypass ingress CORS."
+      }
+    ]
+  },
+  "frontend_issues": {"ui_bugs": [], "integration_issues": [], "design_issues": []},
+  "test_report_links": [
+    "/app/backend/tests/test_cors.py",
+    "/app/backend/tests/test_khetsetu_api.py",
+    "/app/test_reports/pytest/pytest_results.xml"
+  ],
+  "action_items": [
+    "No backend code change needed; CORS middleware is now correctly implemented and all functional flows pass.",
+    "Follow up with Emergent platform (or configure ingress) so the external preview / production route stops rewriting CORS headers to wildcard when credentials are involved — otherwise browsers on khetsetu.in will fail on credentialed requests."
+  ],
+  "critical_code_review_comments": [
+    "seed_demo() early-exits when any user exists, so demo/admin credentials cannot be idempotently repaired after password rotation or partial data seeds — consider upsert-by-email.",
+    "CORS_ORIGINS in backend/.env is set to '*' but is unused by server.py (only FRONTEND_URL and ALLOWED_ORIGINS are read). Remove or repurpose to avoid confusion.",
+    "current_user() imports bson inline via __import__('bson') — replace with a top-level 'from bson import ObjectId' for clarity."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_cors.py",
+    "/app/test_reports/pytest/pytest_results.xml",
+    "/app/test_reports/iteration_2.json"
+  ],
+  "success_rate": {"backend": "100%", "frontend": "not_tested"},
+  "test_credentials": "Demo accounts from /app/memory/test_credentials.md (farmer/buyer/admin @khetsetu.in) — all confirmed working.",
+  "seed_data_creation": "Test suite created and deleted one uniquely-prefixed produce listing and created one order to verify persistence and status update; existing seeded demo data preserved.",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "Backend CORS crash is fixed. Direct-to-backend CORS (localhost:8001) is fully correct: echoes explicit origins for approved list + *.preview.emergentagent.com regex, rejects disallowed origins, allow_credentials=true, all required methods/headers. External URL responses currently show wildcard CORS because the Emergent Cloudflare ingress rewrites headers — this is out of scope for backend code. Functional API suite (test_khetsetu_api.py) also passes via the external URL, so login cookies + all core flows work end-to-end.",
+  "rca of the issue": "The previous fix used a custom @app.middleware that called MutableHeaders.pop, which does not exist on Starlette's MutableHeaders — every request raised AttributeError and returned 500. It has been removed and replaced with the stock CORSMiddleware, which is proven working via direct backend hits."
+}
