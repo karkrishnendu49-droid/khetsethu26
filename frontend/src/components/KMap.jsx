@@ -12,10 +12,9 @@ export const KMap = ({ markers = [], route = null, height = 340, testId = 'khets
   useEffect(() => {
     if (!mapRef.current) {
       mapRef.current = L.map(ref.current, { scrollWheelZoom: false, tap: false });
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
-        attribution: '© Esri © OpenStreetMap contributors', maxZoom: 16,
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors', maxZoom: 19,
       }).addTo(mapRef.current);
-      L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}', { maxZoom: 16 }).addTo(mapRef.current);
     }
     if (layerRef.current) layerRef.current.remove();
     const group = L.featureGroup();
